@@ -1,6 +1,7 @@
 job "hyperbeam-dev" {
   datacenters = ["ator-fin"]
   type = "service"
+  namespace = "dev-services"
 
   group "hyperbeam-group-dev" {
     count = 1
@@ -37,8 +38,14 @@ job "hyperbeam-dev" {
       }
 
       vault {
-	      policies = ["ario-bundler-any1"]
-	    }
+        role = "any1-nomad-workloads-controller"
+      }
+
+      identity {
+        name = "vault_default"
+        aud  = ["any1-infra"]
+        ttl  = "1h"
+      }
 
       template {
         data = <<-EOF
@@ -50,7 +57,7 @@ job "hyperbeam-dev" {
       }
 
       template {
-        data = "{{ with secret `kv/ario-bundler` }}{{ base64Decode .Data.data.BUNDLER_KEY_BASE64 }}{{ end }}"
+        data = "{{ with secret `kv/dev-services/hyperbeam-dev` }}{{ base64Decode .Data.data.WALLET_KEY_BASE64 }}{{ end }}"
         destination = "secrets/wallet.json"
       }
 
@@ -101,11 +108,17 @@ job "hyperbeam-dev" {
       }
 
       vault {
-	      policies = ["ario-bundler-any1"]
-	    }
+        role = "any1-nomad-workloads-controller"
+      }
+
+      identity {
+        name = "vault_default"
+        aud  = ["any1-infra"]
+        ttl  = "1h"
+      }
 
       template {
-        data = "{{ with secret `kv/ario-bundler` }}{{ base64Decode .Data.data.BUNDLER_KEY_BASE64 }}{{ end }}"
+        data = "{{ with secret `kv/dev-services/hyperbeam-dev` }}{{ base64Decode .Data.data.WALLET_KEY_BASE64 }}{{ end }}"
         destination = "secrets/wallet.json"
       }
 
