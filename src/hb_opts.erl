@@ -15,6 +15,7 @@
 -module(hb_opts).
 -export([get/1, get/2, get/3, load/1, load_bin/1]).
 -export([default_message/0, mimic_default_types/2, validate_node_history/1, validate_node_history/3]).
+-export([check_required_opts/2]).
 -include("include/hb.hrl").
 
 %% @doc The default configuration options of the hyperbeam node.
@@ -86,6 +87,7 @@ default_message() ->
             #{<<"name">> => <<"stack@1.0">>, <<"module">> => dev_stack},
             #{<<"name">> => <<"structured@1.0">>, <<"module">> => dev_codec_structured},
             #{<<"name">> => <<"test-device@1.0">>, <<"module">> => dev_test},
+            #{<<"name">> => <<"volume@1.0">>, <<"module">> => dev_volume},
             #{<<"name">> => <<"wasi@1.0">>, <<"module">> => dev_wasi},
             #{<<"name">> => <<"wasm-64@1.0">>, <<"module">> => dev_wasm}
         ],
@@ -377,8 +379,8 @@ mimic_default_types(Map, Mode) ->
 %% @param Opts The options map containing node_history
 %% @param MinLength The minimum acceptable length of node_history
 %% @param MaxLength The maximum acceptable length of node_history
-%% @returns {ok, Length} if MinLength =< Length =< MaxLength,
-%% or {error, Reason} if the length is outside the range.
+%% @returns `{ok, Length}' if `MinLength =< Length =< MaxLength',
+%% or `{error, Reason}' if the length is outside the range.
 validate_node_history(Opts) ->
     validate_node_history(Opts, 1, 1).
 validate_node_history(Opts, MinLength, MaxLength) ->
@@ -408,6 +410,38 @@ validate_node_history(Opts, MinLength, MaxLength) ->
                     "."
                 >>
             }
+    end.
+
+%% @doc Utility function to check for required options in a list.
+%% Takes a list of {Name, Value} pairs and returns:
+%% - {ok, Opts} when all required options are present (Value =/= not_found)
+%% - {error, ErrorMsg} with a message listing all missing options when any are not_found
+%% @param KeyValuePairs A list of {Name, Value} pairs to check.
+%% @param Opts The original options map to return if validation succeeds.
+%% @returns `{ok, Opts}' if all required options are present, or
+%% `{error, <<"Missing required parameters: ", MissingOptsStr/binary>>}'
+%% where `MissingOptsStr' is a comma-separated list of missing option names.
+-spec check_required_opts(list({binary(), term()}), map()) -> 
+    {ok, map()} | {error, binary()}.
+check_required_opts(KeyValuePairs, Opts) ->
+    MissingOpts = lists:filtermap(
+        fun({Name, Value}) ->
+            case Value of
+                not_found -> {true, Name};
+                _ -> false
+            end
+        end,
+        KeyValuePairs
+    ),
+    case MissingOpts of
+        [] -> 
+            {ok, Opts};
+        _ ->
+            MissingOptsStr = binary:list_to_bin(
+                lists:join(<<", ">>, MissingOpts)
+            ),
+            ErrorMsg = <<"Missing required opts: ", MissingOptsStr/binary>>,
+            {error, ErrorMsg}
     end.
 
 %%% Tests
