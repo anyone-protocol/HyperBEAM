@@ -10,7 +10,6 @@ job "hyperbeam-dev" {
       mode = "bridge"
 
       port "hyperbeam" {
-        to = 10000
         host_network = "wireguard"
       }
 
@@ -24,12 +23,14 @@ job "hyperbeam-dev" {
 
       config {
         image = "ghcr.io/anyone-protocol/hyperbeam:latest"
+        force_pull = true
+        image_pull_timeout = "15m"
         command = "rebar3"
-        args = ["shell"]
-        volumes = [
-          "local/config.flat:/app/config.flat",
-          "secrets/wallet.json:/app/wallet.json"
+        args = [
+          "shell", "--eval",
+          "hb:start_mainnet(#{ port => ${NOMAD_PORT_hyperbeam}, mode => debug, priv_key_location => <<\"/app/wallet.json\">>, bundler_ans104 => <<\"https://ar.anyone.tech/bundler:443\">>, faff_allow_list => [<<\"jp0QaS_Zai2hGaB-yRvAIMEtodmH_iHr0drpZxAZQtU\">>], routes => [#{<<\"template\">> => <<\"/process/.*\">>, <<\"node\">> => #{ <<\"prefix\">> => <<\"http://${NOMAD_ADDR_localcu}\">> } }, #{ <<\"template\">> => <<\"/result/.*\">>, <<\"node\">> => #{ <<\"prefix\">> => <<\"http://${NOMAD_ADDR_localcu}\">> } }, #{ <<\"template\">> => <<\"/graphql\">>, <<\"nodes\">> => [ #{ <<\"prefix\">> => <<\"https://arweave-search.goldsky.com\">>, <<\"opts\">> => #{ http_client => httpc, protocol => http2 } }, #{ <<\"prefix\">> => <<\"https://arweave.net\">>, <<\"opts\">> => #{ http_client => gun, protocol => http2 } } ] }, #{ <<\"template\">> => <<\"/raw\">>, <<\"node\">> => #{ <<\"prefix\">> => <<\"https://arweave.net\">>, <<\"opts\">> => #{ http_client => gun, protocol => http2 } } } ] })."
         ]
+        volumes = [ "secrets/wallet.json:/app/wallet.json" ]
       }
 
       resources {
@@ -43,17 +44,8 @@ job "hyperbeam-dev" {
 
       identity {
         name = "vault_default"
-        aud  = ["any1-infra"]
+        aud  = [ "any1-infra" ]
         ttl  = "1h"
-      }
-
-      template {
-        data = <<-EOF
-        port: 10000
-        priv_key_location: /app/wallet.json
-        bundler_ans104: "https://ar.anyone.tech/bundler:443"
-        EOF
-        destination = "local/config.flat"
       }
 
       template {

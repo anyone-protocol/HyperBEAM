@@ -39,7 +39,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- \
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /app
-ARG BUMP=HI
+ARG BUMP=HI2
 RUN git clone https://github.com/permaweb/hyperbeam.git .
 
 RUN rebar3 compile
